@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
+	"os"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -33,32 +34,44 @@ type Device struct {
 func getDevice(bus *dbus.Conn, obj dbus.ObjectPath) Device {
 
 	var info map[string]dbus.Variant
+	bus.Object("org.bluez", obj).Call("org.freedesktop.DBus.Properties.GetAll", 0, "org.bluez.Device1").Store(&info)
 
-	perc, _ := bus.Object("org.bluez", obj).GetProperty("org.bluez.Battery1.Percentage")
-	_ = bus.Object("org.bluez", obj).Call("org.freedesktop.DBus.Properties.GetAll", 0, "org.bluez.Device1").Store(&info)
-
-	var con, pair bool
-	info["Connected"].Store(&con)
+	var connec, pair bool
+	info["Connected"].Store(&connec)
 	info["Paired"].Store(&pair)
 
-	var per int
-	if perc.Value() == nil {
-		per = 0
-	} else {
-		perc.Store(&per)
+	perc := -1
+	if pair {
+		bat, _ := bus.Object("org.bluez", obj).GetProperty("org.bluez.Battery1.Percentage")
+
+		if bat.Value() != nil {
+			bat.Store(&perc)
+		}
 	}
 
-	return Device{info["Name"].String(), per, info["Icon"].String(), con, pair}
+	var name, icon string = "", ""
+	if info["Name"].Value() != nil {
+		info["Name"].Store(&name)
+	}
+	if info["Icon"].Value() != nil {
+		info["Icon"].Store(&icon)
+	}
+
+	return Device{name, perc, icon, connec, pair}
 
 }
 
-func getAllPaired(bus *dbus.Conn) []dbus.ObjectPath {
+func searchAll(bus *dbus.Conn) []dbus.ObjectPath {
 
 	var introspect string
-	_ = bus.Object("org.bluez", bluezPath).Call("org.freedesktop.DBus.Introspectable.Introspect", 0).Store(&introspect)
+	bus.Object("org.bluez", bluezPath).Call("org.freedesktop.DBus.Introspectable.Introspect", 0).Store(&introspect)
 
 	var devices Node
-	_ = xml.Unmarshal([]byte(introspect), &devices)
+	err := xml.Unmarshal([]byte(introspect), &devices)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	var l []dbus.ObjectPath
 	for _, d := range devices.Nodes {
@@ -78,13 +91,21 @@ func printOutput(dl []Device) {
 func main() {
 
 	// Get dbus connection
-	conn, _ := dbus.ConnectSystemBus()
+	conn, err := dbus.ConnectSystemBus()
+	if err != nil {
+		fmt.Println("Failed to connect to dbus ", err)
+		os.Exit(1)
+	}
 
-	objl := getAllPaired(conn)
+	objl := searchAll(conn)
 
 	var devl []Device
 	for _, o := range objl {
-		devl = append(devl, getDevice(conn, o))
+		d := getDevice(conn, o)
+		if d.paired {
+			devl = append(devl, d)
+		}
+
 	}
 
 	printOutput(devl)

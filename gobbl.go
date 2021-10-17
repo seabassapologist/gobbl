@@ -1,12 +1,8 @@
-package gobbl
-
-/*
-Go Bluetooth Battery Life (gobbl) -
-Simple Go utility to get connected bluetooth device battery levels via the Bluez dbus-interface
-*/
+package main
 
 import (
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -14,6 +10,11 @@ import (
 
 	"github.com/godbus/dbus/v5"
 )
+
+/*
+Go Bluetooth Battery Life (gobbl) -
+Simple Go utility to get connected bluetooth device battery levels via the Bluez dbus-interface
+*/
 
 type childNode struct {
 	Name string `xml:"name,attr"`
@@ -48,16 +49,8 @@ type Device struct {
 	paired     bool
 }
 
-func (d *Device) IsPaired() bool {
-	return d.paired
-}
-
-func (d *Device) IsConnected() bool {
-	return d.connected
-}
-
 // Construct a Device from the provided D-Bus Object
-func GetDevice(bus *dbus.Conn, obj dbus.ObjectPath) *Device {
+func GetDevice(bus *dbus.Conn, obj dbus.ObjectPath) Device {
 
 	var info map[string]dbus.Variant
 	bus.Object("org.bluez", obj).Call("org.freedesktop.DBus.Properties.GetAll", 0, "org.bluez.Device1").Store(&info)
@@ -84,7 +77,7 @@ func GetDevice(bus *dbus.Conn, obj dbus.ObjectPath) *Device {
 		info["Icon"].Store(&icon)
 	}
 
-	return &Device{name, perc, icon, connec, pair}
+	return Device{name, perc, icon, connec, pair}
 
 }
 
@@ -155,4 +148,38 @@ func OutputWaybar(dl []Device, uic bool) {
 	}
 
 	fmt.Printf("{\"text\": \"%v\", \"tooltip\": \"%v\", \"class\": \"$class\"}\n", strings.TrimSpace(text), strings.Trim(tooltip, "\\n"))
+}
+
+func main() {
+
+	uic := flag.Bool("i", false, "Replace device name with Font Awesome icons in output")
+	wb := flag.Bool("w", false, "Format output as JSON for Waybar's 'custom' module")
+	flag.Parse()
+
+	// Get dbus connection
+	conn, err := dbus.ConnectSystemBus()
+	if err != nil {
+		fmt.Println("Failed to connect to dbus ", err)
+		os.Exit(1)
+	}
+
+	// Gather list of all BT device objects currently viewable by bluez
+	objl := SearchAll(conn)
+
+	// Build list of Devices of only paired and connected devices
+	var devl []Device
+	for _, o := range objl {
+		var d Device = GetDevice(conn, o)
+		if d.paired && d.connected {
+			devl = append(devl, d)
+		}
+	}
+
+	// Format battery level output
+	if *wb {
+		OutputWaybar(devl, *uic)
+	} else {
+		Output(devl)
+	}
+
 }

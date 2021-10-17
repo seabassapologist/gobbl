@@ -17,4 +17,4 @@
 *.code-workspace
 
 # built binary
-gobbl
+bin/*

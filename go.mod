@@ -1,4 +1,4 @@
-module gobbl
+module github.com/seabassapologist
 
 go 1.17
 

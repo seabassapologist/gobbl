@@ -4,7 +4,7 @@ A simple Go utility to get and display connected bluetooth device battery levels
 
 ![gobbl running in Waybar in Sway](docs/gobbl_waybar.png)
 
-```shell
+```
 Usage of gobbl:
   -i    Replace device name with Font Awesome icons in output
   -w    Format output as JSON for Waybar's 'custom' module

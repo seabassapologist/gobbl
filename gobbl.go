@@ -7,6 +7,7 @@ Simple Go utility to get connected bluetooth device battery levels via the Bluez
 
 import (
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -48,6 +49,7 @@ type Device struct {
 	paired     bool
 }
 
+// Construct a Device from the provided D-Bus Object
 func getDevice(bus *dbus.Conn, obj dbus.ObjectPath) Device {
 
 	var info map[string]dbus.Variant
@@ -57,11 +59,11 @@ func getDevice(bus *dbus.Conn, obj dbus.ObjectPath) Device {
 	info["Connected"].Store(&connec)
 	info["Paired"].Store(&pair)
 
-	// if device is paired, but battery level can't be read, set percentage to -1
 	perc := -1
 	if pair {
 		bat, _ := bus.Object("org.bluez", obj).GetProperty("org.bluez.Battery1.Percentage")
 
+		// if device is paired, but battery level can't be read, set percentage to -1
 		if bat.Value() != nil {
 			bat.Store(&perc)
 		}
@@ -79,6 +81,8 @@ func getDevice(bus *dbus.Conn, obj dbus.ObjectPath) Device {
 
 }
 
+// Get list of D-Bus object paths for all viewable BT devices.
+// May include devices that aren't paired or connected
 func searchAll(bus *dbus.Conn) []dbus.ObjectPath {
 
 	var introspect string
@@ -99,40 +103,42 @@ func searchAll(bus *dbus.Conn) []dbus.ObjectPath {
 
 }
 
+// Output one device reading per line
 func output(dl []Device) {
 	for _, d := range dl {
-		if d.connected {
-			fmt.Printf("%v: %d%%\n", d.name, d.percentage)
-		}
+		fmt.Printf("%v: %d%%\n", d.name, d.percentage)
 	}
 }
 
-// Print out a JSON formatted string for Waybar's custom module
-func outputWaybar(dl []Device) {
+// Print out a JSON formatted line, for Waybar's 'custom' module
+func outputWaybar(dl []Device, uic bool) {
 	var text, tooltip string = "", ""
 	for _, d := range dl {
-		if d.connected {
-			var p, ic, n string
-			if d.percentage == -1 {
-				p = "?"
-			} else {
-				p = strconv.Itoa(d.percentage) + "%"
-			}
 
+		var p, ic, n string
+		if d.percentage == -1 {
+			p = "?"
+		} else {
+			p = strconv.Itoa(d.percentage) + "%"
+		}
+
+		if len(d.name) > 25 {
+			n = fmt.Sprintf("%-19s", d.name[0:19]+"...:")
+		} else {
+			n = fmt.Sprintf("%-25s", d.name+":")
+		}
+
+		if uic {
 			if i, ok := iconMap[d.icon]; ok {
 				ic = i
 			} else {
 				ic = iconMap["Default"]
 			}
-
-			if len(d.name) > 25 {
-				println(len(d.name))
-				n = fmt.Sprintf("%-19s", d.name[0:19]+"...:")
-			} else {
-				n = fmt.Sprintf("%-25s", d.name+":")
-			}
-			text += fmt.Sprintf("%v %v  ", p, ic)
+			text += fmt.Sprintf("%v %v  ", ic, p)
 			tooltip += fmt.Sprintf("%v %v %v\\n", ic, n, p)
+		} else {
+			text += fmt.Sprintf("%v %v  ", d.name, p)
+			tooltip += fmt.Sprintf("%v %v\\n", n, p)
 		}
 	}
 	// if no paired devices are connected display "Disconnected"
@@ -146,6 +152,10 @@ func outputWaybar(dl []Device) {
 
 func main() {
 
+	uic := flag.Bool("i", false, "Replace device name with Font Awesome icons in output")
+	wb := flag.Bool("w", false, "Format output as JSON for Waybar's 'custom' module")
+	flag.Parse()
+
 	// Get dbus connection
 	conn, err := dbus.ConnectSystemBus()
 	if err != nil {
@@ -153,17 +163,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Gather list of all BT device objects currently viewable by bluez
 	objl := searchAll(conn)
 
+	// Build list of Devices of only paired and connected devices
 	var devl []Device
 	for _, o := range objl {
 		d := getDevice(conn, o)
-		if d.paired {
+		if d.paired && d.connected {
 			devl = append(devl, d)
 		}
 
 	}
 
-	outputWaybar(devl)
+	// Format battery level output
+	if *wb {
+		outputWaybar(devl, *uic)
+	} else {
+		output(devl)
+	}
 
 }

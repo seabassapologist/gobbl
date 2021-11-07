@@ -113,38 +113,44 @@ func Output(dl []Device) {
 // Print out a JSON formatted line, for Waybar's 'custom' module
 func OutputWaybar(dl []Device, uic bool) {
 	var text, tooltip string = "", ""
-	for _, d := range dl {
+	var s int = 0
 
-		var p, ic, n string
+	// Find longest device name to calculate tooltip padding
+	for _, d := range dl {
+		if len(d.name) > s {
+			s = len(d.name)
+		}
+	}
+
+	// Build ouput and tooltip strings
+	for _, d := range dl {
+		var p, ic string
+
 		if d.percentage == -1 {
 			p = "?"
 		} else {
 			p = strconv.Itoa(d.percentage) + "%"
 		}
 
-		if len(d.name) > 25 {
-			n = fmt.Sprintf("%-19s", d.name[0:19]+"...:")
-		} else {
-			n = fmt.Sprintf("%-25s", d.name+":")
-		}
-
 		if uic {
+			// Set corresponding icon glyph
 			if i, ok := iconMap[d.icon]; ok {
 				ic = i
 			} else {
 				ic = iconMap["Default"]
 			}
 			text += fmt.Sprintf("%v %v  ", ic, p)
-			tooltip += fmt.Sprintf("%v %v %v\\n", ic, n, p)
+			tooltip += fmt.Sprintf("%v %-*s %v\\n", ic, s+1, d.name+":", p)
 		} else {
+			// Use device name
 			text += fmt.Sprintf("%v %v  ", d.name, p)
-			tooltip += fmt.Sprintf("%v %v\\n", n, p)
+			tooltip += fmt.Sprintf("%-*s %v\\n", s+1, d.name+":", p)
 		}
 	}
 	// if no paired devices are connected display "Disconnected"
 	if text == "" {
 		text = "Disconnected"
-		tooltip = "Disconnected"
+		tooltip = "So lonely..."
 	}
 
 	fmt.Printf("{\"text\": \"%v\", \"tooltip\": \"%v\", \"class\": \"$class\"}\n", strings.TrimSpace(text), strings.Trim(tooltip, "\\n"))

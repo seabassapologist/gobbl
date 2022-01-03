@@ -50,5 +50,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: gobbl-linux-x64-${{ steps.tag_version.outputs.new_tag }}.tar.gz
           asset_name: gobbl-linux-x64-${{ steps.tag_version.outputs.new_tag }}.tar.gz
-          tag: ${{ github.ref }}
+          tag: ${{ steps.tag_version.outputs.new_tag }}
           overwrite: true

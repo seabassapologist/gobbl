@@ -41,21 +41,17 @@ jobs:
           name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
 
-      - name: Get the version
-        id: get_version
-        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
-
       - name: Package binary
         run: |
           ls -l
-          tar -czvf gobbl-linux-x64-${{ steps.get_version.outputs.VERSION }}.tar.gz gobbl
+          tar -czvf gobbl-linux-x64-${{ steps.tag_version.outputs.new_tag }}.tar.gz ./gobbl
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: gobbl-linux-x64-${{ steps.get_version.outputs.VERSION }}.tar.gz
-          asset_name: "gobbl v${{ steps.get_version.outputs.VERSION }}"
-          tag: ${{ github.ref }}
+          file: gobbl-linux-x64-${{ steps.tag_version.outputs.new_tag }}.tar.gz
+          asset_name: Release ${{ steps.tag_version.outputs.new_tag }}
+          tag: ${{ steps.tag_version.outputs.new_tag }}
           overwrite: true
           body: "This is my release text"

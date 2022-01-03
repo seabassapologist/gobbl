@@ -12,11 +12,6 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
-/*
-Go Bluetooth Battery Life (gobbl) -
-Simple Go utility to get connected bluetooth device battery levels via the Bluez dbus-interface
-*/
-
 type childNode struct {
 	Name string `xml:"name,attr"`
 }

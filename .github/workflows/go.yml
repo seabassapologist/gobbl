@@ -24,30 +24,32 @@ jobs:
           go-version: 1.17
 
       - name: Build
-        run: go build -v ./...
+        run: |
+          mkdir bin/
+          go build -v -o bin/gobbl ./...
       
-      - name: Bump version and push tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          custom_release_rules: fix:patch,feature:minor,ver:major
-      - name: Create a GitHub release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
   release:
       name: Release
       runs-on: ubuntu-latest
       steps:
+        - name: Bump version and push tag
+          id: tag_version
+          uses: mathieudutour/github-tag-action@v6.0
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            custom_release_rules: fix:patch,feature:minor,ver:major
+        - name: Create a GitHub release
+          uses: ncipollo/release-action@v1
+          with:
+            tag: ${{ steps.tag_version.outputs.new_tag }}
+            name: Release ${{ steps.tag_version.outputs.new_tag }}
+            body: ${{ steps.tag_version.outputs.changelog }}
         - name: Release
           uses: fnkr/github-action-ghr@v1
           if: startsWith(github.ref, 'refs/tags/')
           env:
-            GHR_COMPRESS: xz
-            GHR_PATH: gobbl
+            GHR_COMPRESS: tar.gz
+            GHR_PATH: bin/
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 

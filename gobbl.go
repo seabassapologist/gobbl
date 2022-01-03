@@ -162,7 +162,7 @@ func OutputWaybar(dl []Device, uic bool) {
 
 	wb, _ := json.Marshal(Waybar{
 		Text:    strings.TrimSpace(text),
-		Tooltip: strings.Trim(tooltip, "\n"),
+		Tooltip: strings.TrimSpace(tooltip),
 		Class:   "$class",
 	})
 

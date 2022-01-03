@@ -13,9 +13,6 @@ on:
       - 'docs/**'
 
 jobs:
-
-
-
   build:
     runs-on: ubuntu-latest
     steps:
@@ -34,6 +31,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_release_rules: fix:patch,feature:minor,ver:major
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
         with:

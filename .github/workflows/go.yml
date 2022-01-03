@@ -50,7 +50,9 @@ jobs:
           run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
             
         - name: Package binary
-          run: tar -czvf gobbl-linux-x64-${{ steps.get_version.outputs.VERSION }}.tar.gz gobbl
+          run: |
+            ls -l
+            tar -czvf gobbl-linux-x64-${{ steps.get_version.outputs.VERSION }}.tar.gz gobbl
           
         - name: Upload binaries to release
           uses: svenstaro/upload-release-action@v2

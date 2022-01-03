@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -47,6 +48,12 @@ type Device struct {
 	icon       string
 	connected  bool
 	paired     bool
+}
+
+type Waybar struct {
+	Text    string `json:"text"`
+	Tooltip string `json:"tooltip"`
+	Class   string `json:"class"`
 }
 
 // Construct a Device from the provided D-Bus Object
@@ -140,11 +147,11 @@ func OutputWaybar(dl []Device, uic bool) {
 				ic = iconMap["Default"]
 			}
 			text += fmt.Sprintf("%v %v  ", ic, p)
-			tooltip += fmt.Sprintf("%v %-*s %v\\n", ic, s+1, d.name+":", p)
+			tooltip += fmt.Sprintf("%v %-*s %v\n", ic, s+1, d.name+":", p)
 		} else {
 			// Use device name
 			text += fmt.Sprintf("%v %v  ", d.name, p)
-			tooltip += fmt.Sprintf("%-*s %v\\n", s+1, d.name+":", p)
+			tooltip += fmt.Sprintf("%-*s %v\n", s+1, d.name+":", p)
 		}
 	}
 	// if no paired devices are connected display "Disconnected"
@@ -153,13 +160,20 @@ func OutputWaybar(dl []Device, uic bool) {
 		tooltip = "So lonely..."
 	}
 
-	fmt.Printf("{\"text\": \"%v\", \"tooltip\": \"%v\", \"class\": \"$class\"}\n", strings.TrimSpace(text), strings.Trim(tooltip, "\\n"))
+	wb, _ := json.Marshal(Waybar{
+		Text:    text,
+		Tooltip: tooltip,
+		Class:   "$class",
+	})
+
+	fmt.Println(string(wb))
+
 }
 
 func main() {
 
 	uic := flag.Bool("i", false, "Replace device name with Font Awesome icons in output")
-	wb := flag.Bool("w", false, "Format output as JSON for Waybar's 'custom' module")
+	fm := flag.String("f", "", "Formatting for output: 'Waybar', 'None' (default)")
 	flag.Parse()
 
 	// Get dbus connection
@@ -173,19 +187,22 @@ func main() {
 	objl := SearchAll(conn)
 
 	// Build list of Devices of only paired and connected devices
-	var devl []Device
+	var dvl []Device
 	for _, o := range objl {
 		var d Device = GetDevice(conn, o)
 		if d.paired && d.connected {
-			devl = append(devl, d)
+			dvl = append(dvl, d)
 		}
 	}
 
 	// Format battery level output
-	if *wb {
-		OutputWaybar(devl, *uic)
-	} else {
-		Output(devl)
+	switch strings.ToLower(*fm) {
+	case "waybar":
+		OutputWaybar(dvl, *uic)
+	case "none":
+		Output(dvl)
+	default:
+		Output(dvl)
 	}
 
 }

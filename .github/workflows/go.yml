@@ -38,5 +38,16 @@ jobs:
           tag: ${{ steps.tag_version.outputs.new_tag }}
           name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
+  release:
+      name: Release
+      runs-on: ubuntu-latest
+      steps:
+        - name: Release
+          uses: fnkr/github-action-ghr@v1
+          if: startsWith(github.ref, 'refs/tags/')
+          env:
+            GHR_COMPRESS: xz
+            GHR_PATH: gobbl
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 

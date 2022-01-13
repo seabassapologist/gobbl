@@ -21,3 +21,23 @@ Waybar example:
     "interval": 500
 },
 ```
+
+## Building
+
+To locally, ensure you have 'Go >=1.17' installed, and run the following in the source dir
+
+```
+$ go build . 
+```
+
+or 
+
+```
+$ go install .
+```
+
+to install to your `$GOPATH`
+
+## Installing
+
+gobbl is available in the [Arch User Repository](https://aur.archlinux.org/packages/gobbl)

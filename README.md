@@ -24,7 +24,7 @@ Waybar example:
 
 ## Building
 
-To locally, ensure you have 'Go >=1.17' installed, and run the following in the source dir
+To locally, ensure you have `Go >=1.17` installed, and run the following in the source dir
 
 ```
 $ go build . 

@@ -24,11 +24,15 @@ Waybar example:
 
 ## Building
 
-To locally, ensure you have `Go >=1.17` installed, and run the following in the source dir
+To build locally, ensure you have `Go >=1.17` installed, and run the following in the source dir
 
 ```
 $ go build . 
 ```
+
+## Installing
+
+gobbl is available in the [Arch User Repository](https://aur.archlinux.org/packages/gobbl)
 
 or 
 
@@ -37,7 +41,3 @@ $ go install .
 ```
 
 to install to your `$GOPATH`
-
-## Installing
-
-gobbl is available in the [Arch User Repository](https://aur.archlinux.org/packages/gobbl)
